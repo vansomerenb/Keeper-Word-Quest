@@ -216,6 +216,14 @@ button {
   white-space: nowrap;
 }
 
+/* Scramble: same theme, new letter layout */
+.btn-scramble {
+  background: #0e7490;
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(14, 116, 144, 0.35);
+  width: 100%;
+}
+
 .icon-btn {
   width: var(--touch);
   height: var(--touch);
@@ -1208,6 +1216,11 @@ button {
     background: #78350f;
     color: #fef3c7;
     border-color: #fbbf24;
+  }
+
+  .btn-scramble {
+    background: #22d3ee;
+    color: #0f172a;
   }
 
   .logo span,

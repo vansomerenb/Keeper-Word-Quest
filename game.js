@@ -177,10 +177,12 @@
 
   /**
    * Place all words into a grid. Returns { grid, placed, words }.
-   * Falls back to a slightly smaller word set if placement fails.
+   * @param {object} def Puzzle definition (theme + word list)
+   * @param {number} [scrambleSeed] Optional seed — different value → new layout, same words
    */
-  function generatePuzzle(def) {
+  function generatePuzzle(def, scrambleSeed) {
     const size = def.gridSize;
+    const seedMix = scrambleSeed == null ? 0 : scrambleSeed >>> 0;
     let words = def.words
       .map((w) => String(w).toUpperCase().replace(/[^A-Z]/g, ""))
       .filter((w) => w.length >= 2 && w.length <= size);
@@ -189,24 +191,33 @@
     words = words.slice().sort((a, b) => b.length - a.length);
 
     for (let attempt = 0; attempt < 50; attempt++) {
-      const rng = mulberry32((def.id * 2654435761) ^ (attempt * 97));
+      const rng = mulberry32(
+        (def.id * 2654435761) ^ (attempt * 97) ^ (seedMix * 0x9e3779b9)
+      );
       const result = tryPlace(words, size, rng);
       if (result) {
         return {
           def,
           grid: result.grid,
           placed: result.placed,
-          words: result.placed.map((p) => p.word)
+          words: result.placed.map((p) => p.word),
+          scrambleSeed: seedMix || null
         };
       }
     }
 
     // Soft fallback: drop shortest words
     const shorter = words.slice(0, Math.max(8, words.length - 2));
-    const rng = mulberry32(def.id * 13 + 7);
+    const rng = mulberry32((def.id * 13 + 7) ^ (seedMix * 0x85ebca6b));
     const result = tryPlace(shorter, size, rng);
     if (result) {
-      return { def, grid: result.grid, placed: result.placed, words: result.placed.map((p) => p.word) };
+      return {
+        def,
+        grid: result.grid,
+        placed: result.placed,
+        words: result.placed.map((p) => p.word),
+        scrambleSeed: seedMix || null
+      };
     }
 
     // Absolute minimal fallback
@@ -217,7 +228,8 @@
       def,
       grid,
       placed: [{ word: w, cells: w.split("").map((_, i) => ({ r: 0, c: i })) }],
-      words: [w]
+      words: [w],
+      scrambleSeed: seedMix || null
     };
   }
 
@@ -720,7 +732,9 @@
      -------------------------------------------------------------------------- */
   let session = null;
   let timerId = null;
-  let gridCache = {}; // id -> generated
+  let gridCache = {}; // id -> default (unscrambled) layout
+  /** scrambleRound by puzzle id — how many times Scramble was used this visit */
+  let scrambleRounds = {};
 
   function getGenerated(id) {
     if (!gridCache[id]) {
@@ -731,15 +745,34 @@
     return gridCache[id];
   }
 
-  function startGame(id) {
-    const generated = getGenerated(id);
+  /**
+   * @param {number} id Puzzle id
+   * @param {{ scrambleSeed?: number, scrambleRound?: number }} [opts]
+   */
+  function startGame(id, opts) {
+    opts = opts || {};
+    const def = PUZZLES.find((p) => p.id === id);
+    if (!def) return;
+
+    let generated;
+    if (opts.scrambleSeed != null) {
+      // Fresh layout, same theme & word list
+      generated = generatePuzzle(def, opts.scrambleSeed);
+    } else {
+      generated = getGenerated(id);
+    }
     if (!generated) return;
 
     progress.lastPlayedId = id;
     saveProgress();
 
-    const pal = PALETTES[generated.def.palette] || PALETTES.unicorn;
+    const pal = PALETTES[generated.def.palette] || PALETTES.moonlark;
     applyPalette(generated.def.palette);
+
+    const scrambleRound =
+      opts.scrambleRound != null
+        ? opts.scrambleRound
+        : scrambleRounds[id] || 0;
 
     session = {
       id: id,
@@ -751,11 +784,12 @@
       elapsed: 0,
       selecting: false,
       path: [],
-      complete: false
+      complete: false,
+      scrambleRound: scrambleRound
     };
 
     $("#game-title").textContent = generated.def.title;
-    $("#game-meta").textContent =
+    let meta =
       difficultyLabel(generated.def.gridSize) +
       " · " +
       generated.def.gridSize +
@@ -763,6 +797,10 @@
       generated.def.gridSize +
       " · " +
       pal.emoji;
+    if (scrambleRound > 0) {
+      meta += " · Scramble #" + scrambleRound;
+    }
+    $("#game-meta").textContent = meta;
 
     $("#score-value").textContent = "0";
     $("#timer-value").textContent = "0:00";
@@ -789,6 +827,31 @@
       resizeCanvas();
       paintFoundPaths();
     });
+  }
+
+  /**
+   * Replay the same theme with a newly shuffled letter grid.
+   * Same words & palette; placement and filler letters change.
+   */
+  function scrambleReplay() {
+    if (!session) return;
+    const id = session.id;
+    const nextRound = (session.scrambleRound || 0) + 1;
+    scrambleRounds[id] = nextRound;
+    // Unique seed each scramble so the grid is always different
+    const seed =
+      ((Date.now() & 0xffffffff) ^
+        (Math.floor(Math.random() * 0xffffffff) >>> 0) ^
+        (nextRound * 0x85ebca6b) ^
+        (id * 0xc2b2ae35)) >>>
+      0;
+
+    clearInterval(timerId);
+    timerId = null;
+    hideWin();
+    sfxFound();
+    haptic(15);
+    startGame(id, { scrambleSeed: seed, scrambleRound: nextRound });
   }
 
   function buildGrid() {
@@ -1102,7 +1165,7 @@
     sfxWin();
     haptic([20, 40, 20]);
 
-    const pal = PALETTES[session.gen.def.palette] || PALETTES.unicorn;
+    const pal = PALETTES[session.gen.def.palette] || PALETTES.moonlark;
     $("#win-emoji").textContent = pal.emoji;
     $("#win-subtitle").textContent = session.gen.def.title;
     $("#win-stars").textContent = starString(stars);
@@ -1110,12 +1173,14 @@
     $("#win-time").textContent = formatTime(session.elapsed);
     $("#win-score").textContent = String(session.score);
     $("#win-hints").textContent = String(session.hintsUsed);
+    const scrambleNote =
+      " Tap Scramble for the same theme with a brand-new letter grid.";
     $("#win-message").textContent =
-      stars === 3
+      (stars === 3
         ? "Triple stars! The Council would be impressed. ✦"
         : stars === 2
           ? "Strong work — leap faster next time for the third star!"
-          : "Quest complete! Return anytime to chase more stars.";
+          : "Quest complete! Return anytime to chase more stars.") + scrambleNote;
 
     spawnConfetti();
     $("#overlay-win").hidden = false;
@@ -1208,6 +1273,10 @@
     });
 
     $("#btn-hint").addEventListener("click", useHint);
+
+    $("#btn-win-scramble").addEventListener("click", function () {
+      scrambleReplay();
+    });
 
     $("#btn-win-gallery").addEventListener("click", function () {
       hideWin();
