@@ -148,7 +148,8 @@ button {
 .screen[hidden],
 .overlay[hidden],
 .banner[hidden],
-.found-toast[hidden] {
+.found-toast[hidden],
+.name-field[hidden] {
   display: none !important;
 }
 

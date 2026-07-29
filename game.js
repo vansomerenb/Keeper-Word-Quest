@@ -1209,30 +1209,82 @@
      Onboarding
      -------------------------------------------------------------------------- */
   const ONB_PAGES = [
-    { emoji: "🌙", title: "Welcome, Moonlark", body: "Fifty word quests inspired by Keeper of the Lost Cities — academies, abilities, allies, and secrets of the elvin world." },
-    { emoji: "🔍", title: "Hunt every letter path", body: "Drag in any direction — across, down, diagonal, even backwards. Words glow when you find them." },
-    { emoji: "✦", title: "Fill your Codex", body: "Finish quests, earn stars, and build My Codex. Hints are limited — think like a Cognate." },
-    { emoji: "🏛️", title: "Name your explorer", body: "This name appears in your Codex.", name: true }
+    {
+      emoji: "🌙",
+      title: "Welcome, Moonlark",
+      body: "Fifty word quests inspired by Keeper of the Lost Cities — academies, abilities, allies, and secrets of the elvin world."
+    },
+    {
+      emoji: "🔍",
+      title: "Hunt every letter path",
+      body: "Drag in any direction — across, down, diagonal, even backwards. Words glow when you find them."
+    },
+    {
+      emoji: "✦",
+      title: "Earn your stars",
+      body: "Finish quests, collect stars, and fill My Codex. Hints are limited — think like a Cognate."
+    },
+    {
+      emoji: "✨",
+      title: "Claim your leap name",
+      body: "Every great Moonlark needs a name before the first light leap. It shows on your quest progress.",
+      name: true,
+      nameLabel: "What name will sparkle on your leaps?",
+      namePlaceholder: "e.g. Sophie"
+    }
   ];
   let onbPage = 0;
 
   function maybeShowOnboarding() {
     if (localStorage.getItem(STORAGE.onboarding) === "1") return;
     onbPage = 0;
+    const nameInput = $("#onb-name");
+    if (nameInput) nameInput.value = "";
     renderOnboarding();
     $("#overlay-onboarding").hidden = false;
   }
 
   function renderOnboarding() {
     const page = ONB_PAGES[onbPage];
+    const isNameStep = !!page.name;
     $("#onb-emoji").textContent = page.emoji;
     $("#onb-title").textContent = page.title;
     $("#onb-body").textContent = page.body;
-    $("#onb-name-wrap").hidden = !page.name;
-    $("#btn-onb-next").textContent = page.name ? "Start Questing" : onbPage === ONB_PAGES.length - 2 ? "Almost there" : "Next";
+
+    const nameWrap = $("#onb-name-wrap");
+    const nameInput = $("#onb-name");
+    nameWrap.hidden = !isNameStep;
+    if (isNameStep) {
+      const label = $("#onb-name-label");
+      if (label && page.nameLabel) label.textContent = page.nameLabel;
+      if (page.namePlaceholder) nameInput.placeholder = page.namePlaceholder;
+      // Defer focus so the field is visible first
+      requestAnimationFrame(function () {
+        try {
+          nameInput.focus();
+        } catch (e) {
+          /* ignore */
+        }
+      });
+    }
+
+    $("#btn-onb-next").textContent = isNameStep
+      ? "Start Questing"
+      : onbPage === ONB_PAGES.length - 2
+        ? "Almost there"
+        : "Next";
     $("#onb-dots").innerHTML = ONB_PAGES.map(function (_, i) {
       return '<span class="' + (i === onbPage ? "on" : "") + '"></span>';
     }).join("");
+  }
+
+  function finishOnboarding() {
+    const name = ($("#onb-name").value || "").trim();
+    settings.playerName = name || "Explorer";
+    saveSettings();
+    localStorage.setItem(STORAGE.onboarding, "1");
+    $("#overlay-onboarding").hidden = true;
+    renderHome();
   }
 
   /* --------------------------------------------------------------------------
@@ -1315,19 +1367,20 @@
       saveSettings();
     });
 
-    // Onboarding
+    // Onboarding — name field only on the last step
     $("#btn-onb-next").addEventListener("click", function () {
       if (onbPage < ONB_PAGES.length - 1) {
         onbPage += 1;
         renderOnboarding();
         return;
       }
-      const name = ($("#onb-name").value || "").trim();
-      settings.playerName = name || "Explorer";
-      saveSettings();
-      localStorage.setItem(STORAGE.onboarding, "1");
-      $("#overlay-onboarding").hidden = true;
-      renderHome();
+      finishOnboarding();
+    });
+    $("#onb-name").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (onbPage === ONB_PAGES.length - 1) finishOnboarding();
+      }
     });
 
     // Grid pointer events (touch + mouse)
