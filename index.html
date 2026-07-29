@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#1B4F72" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="KeeperQuest" />
+  <meta name="description" content="Keeper Word Quest — 50 word-search puzzles inspired by Keeper of the Lost Cities. Offline-ready PWA." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <title>Keeper Word Quest</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="bg-orbs" aria-hidden="true">
+    <span class="orb orb-a"></span>
+    <span class="orb orb-b"></span>
+    <span class="orb orb-c"></span>
+  </div>
+
+  <div id="app" class="app">
+
+    <!-- HOME -->
+    <section id="screen-home" class="screen active" aria-label="Home">
+      <header class="home-header">
+        <p class="eyebrow">✦ Inspired by the Lost Cities</p>
+        <h1 class="logo">Keeper <span>Word Quest</span></h1>
+        <p class="tagline">50 puzzles · Foxfire, abilities, allies &amp; secrets · offline ready</p>
+      </header>
+
+      <div class="stats-row" id="home-stats" role="status" aria-live="polite"></div>
+
+      <div class="home-actions">
+        <button type="button" class="btn btn-primary btn-lg" id="btn-browse">Browse Quests</button>
+        <button type="button" class="btn btn-secondary" id="btn-continue" hidden>Continue</button>
+        <div class="home-link-row">
+          <button type="button" class="btn btn-ghost" id="btn-collection">My Codex</button>
+          <button type="button" class="btn btn-ghost" id="btn-settings">Settings</button>
+        </div>
+      </div>
+
+      <p class="home-foot">Add to Home Screen for a full-screen leap 🌙</p>
+      <p class="disclaimer">Unofficial fan-made word game. Not affiliated with Shannon Messenger or the publisher.</p>
+    </section>
+
+    <!-- GALLERY -->
+    <section id="screen-gallery" class="screen" aria-label="Puzzle gallery" hidden>
+      <header class="screen-bar">
+        <button type="button" class="icon-btn" data-nav="home" aria-label="Back to home">←</button>
+        <h2>Quest Themes</h2>
+        <span class="bar-spacer"></span>
+      </header>
+
+      <div class="toolbar">
+        <label class="search-wrap">
+          <span class="visually-hidden">Search puzzles</span>
+          <input type="search" id="gallery-search" placeholder="Search themes or words…" autocomplete="off" enterkeyhint="search" />
+        </label>
+        <div class="chip-scroll" id="category-chips" role="tablist" aria-label="Categories"></div>
+      </div>
+
+      <div class="gallery-grid" id="gallery-grid"></div>
+    </section>
+
+    <!-- GAME -->
+    <section id="screen-game" class="screen" aria-label="Word search game" hidden>
+      <header class="screen-bar game-bar">
+        <button type="button" class="icon-btn" id="btn-game-back" aria-label="Leave puzzle">←</button>
+        <div class="game-title-block">
+          <h2 id="game-title">Puzzle</h2>
+          <p id="game-meta" class="meta"></p>
+        </div>
+        <div class="game-hud">
+          <span class="hud-chip" id="hud-timer">
+            <span aria-hidden="true">⏱</span> <span id="timer-value">0:00</span>
+          </span>
+          <span class="hud-chip" id="hud-score">
+            <span aria-hidden="true">✦</span> <span id="score-value">0</span>
+          </span>
+          <button type="button" class="btn btn-hint" id="btn-hint" aria-label="Use a hint">💡 Hint</button>
+        </div>
+      </header>
+
+      <div class="game-layout">
+        <div class="grid-panel">
+          <div
+            id="word-grid"
+            class="word-grid"
+            role="grid"
+            aria-label="Letter grid. Drag across letters to select a word."
+          ></div>
+          <canvas id="selection-canvas" class="selection-canvas" aria-hidden="true"></canvas>
+        </div>
+
+        <aside class="word-panel" aria-label="Word list">
+          <div class="word-panel-head">
+            <h3>Words</h3>
+            <span id="word-progress" class="word-progress">0/0</span>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <div class="progress-fill" id="word-progress-fill"></div>
+          </div>
+          <ul id="word-list" class="word-list"></ul>
+        </aside>
+      </div>
+
+      <div id="found-toast" class="found-toast" hidden role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- WIN -->
+    <div id="overlay-win" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="win-title">
+      <div class="overlay-card">
+        <div class="confetti" id="confetti" aria-hidden="true"></div>
+        <p class="overlay-emoji" id="win-emoji">✦</p>
+        <h2 id="win-title">Quest complete!</h2>
+        <p id="win-subtitle" class="overlay-sub"></p>
+        <div class="stars-display" id="win-stars" aria-label="Stars earned"></div>
+        <div class="win-metrics">
+          <div><strong id="win-time">0:00</strong><span>Time</span></div>
+          <div><strong id="win-score">0</strong><span>Score</span></div>
+          <div><strong id="win-hints">0</strong><span>Hints</span></div>
+        </div>
+        <p id="win-message" class="overlay-msg"></p>
+        <div class="overlay-actions">
+          <button type="button" class="btn btn-primary" id="btn-win-gallery">Back to Themes</button>
+          <button type="button" class="btn btn-secondary" id="btn-win-home">Home</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLLECTION -->
+    <section id="screen-collection" class="screen" aria-label="My Codex" hidden>
+      <header class="screen-bar">
+        <button type="button" class="icon-btn" data-nav="home" aria-label="Back to home">←</button>
+        <h2>My Codex</h2>
+        <span class="bar-spacer"></span>
+      </header>
+      <div class="collection-body" id="collection-body"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="screen-settings" class="screen" aria-label="Settings" hidden>
+      <header class="screen-bar">
+        <button type="button" class="icon-btn" data-nav="home" aria-label="Back to home">←</button>
+        <h2>Settings</h2>
+        <span class="bar-spacer"></span>
+      </header>
+
+      <div class="settings-list">
+        <label class="setting-row">
+          <span>Explorer name</span>
+          <input type="text" id="setting-name" maxlength="24" autocomplete="nickname" />
+        </label>
+        <label class="setting-row switch-row">
+          <span>Sound effects</span>
+          <input type="checkbox" id="setting-sound" checked />
+        </label>
+        <label class="setting-row switch-row">
+          <span>Show timer</span>
+          <input type="checkbox" id="setting-timer" checked />
+        </label>
+        <label class="setting-row switch-row">
+          <span>Haptic feedback</span>
+          <input type="checkbox" id="setting-haptics" checked />
+        </label>
+        <p class="settings-note">
+          Progress stays on this device. Offline after first visit. Fan-made game — not affiliated with the books’ author or publisher.
+        </p>
+        <p class="settings-meta">Keeper Word Quest · v1.0 · PWA</p>
+      </div>
+    </section>
+
+    <!-- ONBOARDING -->
+    <div id="overlay-onboarding" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="onb-title">
+      <div class="overlay-card onboarding-card">
+        <p class="overlay-emoji" id="onb-emoji">🌙</p>
+        <h2 id="onb-title">Welcome, Moonlark</h2>
+        <p id="onb-body" class="overlay-sub">
+          Fifty word quests drawn from the world of Keeper of the Lost Cities — academies, abilities, allies, and mysteries.
+        </p>
+        <label class="name-field" id="onb-name-wrap" hidden>
+          <span>What should the Codex call you?</span>
+          <input type="text" id="onb-name" maxlength="24" placeholder="Your name" autocomplete="nickname" />
+        </label>
+        <div class="overlay-actions">
+          <button type="button" class="btn btn-primary" id="btn-onb-next">Next</button>
+        </div>
+        <div class="dots" id="onb-dots" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div id="hint-locked" class="banner" hidden role="status">No free hints left — trust your instincts, like a true Cognate. 💡</div>
+  </div>
+
+  <script src="game.js" defer></script>
+</body>
+</html>

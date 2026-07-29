@@ -1,0 +1,33 @@
+{
+  "name": "Keeper Word Quest",
+  "short_name": "KeeperQuest",
+  "description": "50 word-search puzzles inspired by Keeper of the Lost Cities — Foxfire, abilities, allies, and secrets of the Lost Cities.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#E8F4FC",
+  "theme_color": "#1B4F72",
+  "lang": "en",
+  "categories": ["games", "education", "entertainment", "books"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
