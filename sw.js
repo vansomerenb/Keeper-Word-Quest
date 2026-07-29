@@ -3,7 +3,7 @@
    Caches app shell for offline play after first visit.
    ========================================================================== */
 
-const CACHE_NAME = "keeper-word-quest-v2";
+const CACHE_NAME = "keeper-word-quest-v3";
 
 const ASSETS = [
   "./",

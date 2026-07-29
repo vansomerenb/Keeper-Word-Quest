@@ -681,7 +681,7 @@
 
     html += "<h3>Completed Themes</h3>";
     if (!done.length) {
-      html += '<div class="empty-card">Your Codex is waiting — finish a quest and it will shine here.</div>';
+      html += '<div class="empty-card">Your quests are waiting — finish one and it will shine here.</div>';
     } else {
       html +=
         '<div class="done-grid">' +
@@ -1222,7 +1222,7 @@
     {
       emoji: "✦",
       title: "Earn your stars",
-      body: "Finish quests, collect stars, and fill My Codex. Hints are limited — think like a Cognate."
+      body: "Finish quests, collect stars, and fill My Quests. Hints are limited — think like a Cognate."
     },
     {
       emoji: "✨",
